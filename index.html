@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Spajanje PDF-ova</title>
+	<style>
+		body {
+			font-family: sans-serif;
+			padding: 20px;
+		}
+
+		#fileList {
+			margin-top: 10px;
+			padding: 0;
+			list-style-type: none;
+		}
+
+		#fileList li {
+			margin: 5px 0;
+			padding: 5px 10px;
+			background: #f0f0f0;
+			border: 1px solid #ccc;
+			cursor: grab;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.remove-btn {
+			background: red;
+			color: white;
+			border: none;
+			cursor: pointer;
+			padding: 2px 6px;
+			font-size: 14px;
+		}
+
+		#dropZone {
+			border: 2px dashed #999;
+			padding: 20px;
+			margin-top: 10px;
+			text-align: center;
+			color: #666;
+		}
+	</style>
+</head>
+
+<body>
+	<h2>Spajanje PDF-ova</h2>
+	<input type="file" id="pdfInput" accept="application/pdf" style="display: none;">
+	<button onclick="document.getElementById('pdfInput').click()">Dodaj PDF</button>
+
+	<div id="dropZone">Ili prevuci PDF fajlove ovde</div>
+	<ul id="fileList"></ul>
+
+	<br>
+	<button onclick="mergePDFs()">Spoji PDF-ove</button>
+	<br><br>
+	<a id="downloadLink" style="display:none">Preuzmi rezultat</a>
+
+	<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+	<script src="pdf-fuser.js"></script>
+</body>
+
+</html>
