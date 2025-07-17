@@ -1,13 +1,107 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sr">
 
 <head>
 	<meta charset="UTF-8">
-	<title>Spajanje PDF-ova</title>
+	<title>PDF alat: Spajanje, Razdvajanje i Rotacija</title>
+	<script src="pdf-lib.min.js"></script>
+	<script src="pdf.min.js"></script>
+	<script>
+		pdfjsLib.GlobalWorkerOptions.workerSrc = "pdf.worker.min.js";
+	</script>
 	<style>
+		:root {
+			--bg: #f9f9fb;
+			--text: #333;
+			--box: #fff;
+			--border: #ccc;
+			--accent: #3498db;
+			--accent-hover: #2980b9;
+			--remove: #e74c3c;
+			--remove-hover: #c0392b;
+			--success: #2ecc71;
+			--success-hover: #27ae60;
+		}
+
+		[data-theme="dark"] {
+			--bg: #1e1e1e;
+			--text: #e0e0e0;
+			--box: #2c2c2c;
+			--border: #444;
+			--accent: #2980b9;
+			--accent-hover: #1f6699;
+			--remove: #c0392b;
+			--remove-hover: #922b21;
+			--success: #27ae60;
+			--success-hover: #1e8449;
+		}
+
 		body {
-			font-family: sans-serif;
-			padding: 20px;
+			font-family: 'Segoe UI', sans-serif;
+			background: var(--bg);
+			padding: 40px 20px;
+			max-width: 900px;
+			margin: auto;
+			color: var(--text);
+			transition: background 0.3s, color 0.3s;
+		}
+
+		h1 {
+			text-align: center;
+			color: var(--accent);
+			margin-bottom: 40px;
+		}
+
+		h2 {
+			color: var(--text);
+			border-bottom: 2px solid var(--border);
+			padding-bottom: 5px;
+			margin-top: 40px;
+		}
+
+		button {
+			background-color: var(--accent);
+			color: white;
+			border: none;
+			padding: 10px 20px;
+			margin: 5px 5px 10px 0;
+			border-radius: 4px;
+			cursor: pointer;
+			font-size: 14px;
+			transition: background-color 0.3s;
+		}
+
+		button:hover {
+			background-color: var(--accent-hover);
+		}
+
+		.remove-btn {
+			background: none;
+			border: none;
+			font-size: 18px;
+			cursor: pointer;
+			color: var(--remove);
+		}
+
+		.remove-btn:hover {
+			color: var(--remove-hover);
+		}
+
+		input[type="text"],
+		select {
+			padding: 8px;
+			border: 1px solid var(--border);
+			border-radius: 4px;
+			width: 300px;
+			max-width: 100%;
+			margin: 5px 0 10px 0;
+			font-size: 14px;
+			background: var(--box);
+			color: var(--text);
+		}
+
+		input[type="file"] {
+			margin-top: 10px;
 		}
 
 		#fileList {
@@ -18,49 +112,219 @@
 
 		#fileList li {
 			margin: 5px 0;
-			padding: 5px 10px;
-			background: #f0f0f0;
-			border: 1px solid #ccc;
-			cursor: grab;
+			padding: 8px 12px;
+			background: var(--box);
+			border: 1px solid var(--border);
+			border-radius: 4px;
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
 		}
 
-		.remove-btn {
-			background: red;
+		a.download-link {
+			background: var(--success);
 			color: white;
-			border: none;
-			cursor: pointer;
-			padding: 2px 6px;
-			font-size: 14px;
+			text-decoration: none;
+			padding: 10px 15px;
+			display: inline-block;
+			border-radius: 4px;
+			transition: background-color 0.3s;
 		}
 
-		#dropZone {
-			border: 2px dashed #999;
-			padding: 20px;
-			margin-top: 10px;
-			text-align: center;
-			color: #666;
+		a.download-link:hover {
+			background: var(--success-hover);
+		}
+
+		.top-bar {
+			display: flex;
+			justify-content: flex-end;
+			margin-bottom: 10px;
+		}
+
+		.theme-toggle {
+			background: none;
+			border: none;
+			cursor: pointer;
+			font-size: 18px;
+			color: var(--text);
+		}
+
+		.theme-toggle:hover {
+			color: var(--accent);
+		}
+
+		.preview-container canvas {
+			margin: 10px 5px;
+			border: 1px solid var(--border);
 		}
 	</style>
 </head>
 
-<body>
-	<h2>Spajanje PDF-ova</h2>
-	<input type="file" id="pdfInput" accept="application/pdf" style="display: none;">
-	<button onclick="document.getElementById('pdfInput').click()">Dodaj PDF</button>
-
-	<div id="dropZone">Ili prevuci PDF fajlove ovde</div>
+<body data-theme="light">
+	<h1>📄 PDF alat: Spajanje, Razdvajanje i Rotacija</h1>
+	<h2>🔗 Spajanje PDF-ova</h2>
+	<input type="file" id="pdfInput" accept="application/pdf" multiple>
+	<button onclick="clearFiles()">🗑️ Obriši sve</button>
 	<ul id="fileList"></ul>
-
-	<br>
-	<button onclick="mergePDFs()">Spoji PDF-ove</button>
+	<button onclick="mergePDFs()">🔄 Spoji PDF-ove</button>
 	<br><br>
-	<a id="downloadLink" style="display:none">Preuzmi rezultat</a>
-
-	<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
-	<script src="pdf-fuser.js"></script>
+	<a id="downloadLink" class="download-link" style="display:none">📥 Preuzmi spojeni PDF</a>
+	<div class="preview-container" id="mergePreview"></div>
+	<h2>✂️ Izdvajanje stranica</h2>
+	<label>Izaberi PDF: </label>
+	<input type="file" id="splitInput" accept="application/pdf">
+	<br><br>
+	<label>Stranice (npr. 1,3,5): </label>
+	<input type="text" id="pageNumbers" placeholder="1,2,5">
+	<br><br>
+	<button onclick="extractPages()">📤 Izdvoji stranice</button>
+	<br><br>
+	<a id="splitDownload" class="download-link" style="display:none">📥 Preuzmi izdvojeni PDF</a>
+	<div class="preview-container" id="splitPreview"></div>
+	<h2>🔄 Rotacija stranica</h2>
+	<input type="file" id="rotateInput" accept="application/pdf">
+	<br><br>
+	<label>Stranice za rotaciju (npr. 1,3,5 ili prazno za sve): </label>
+	<input type="text" id="rotatePages" placeholder="1,3,5">
+	<br><br>
+	<label>Ugao rotacije: </label>
+	<select id="rotation">
+		<option value="90">90°</option>
+		<option value="180">180°</option>
+		<option value="270">270°</option>
+	</select>
+	<button onclick="rotatePages()">🔁 Rotiraj stranice</button>
+	<br><br>
+	<a id="rotateDownload" class="download-link" style="display:none">📥 Preuzmi rotirani PDF</a>
+	<div class="preview-container" id="rotatePreview"></div>
+	<footer style="text-align:center; margin-top: 60px; font-size: 14px; color: var(--text); opacity: 0.6;">
+		Autori: Emil Rušiti &lt;<a href="mailto:emilr@telekom.rs">emilr@telekom.rs</a>&gt;, Jugoslav Jeftenić &lt;<a
+			href="mailto:jugoslav@mts-si.rs">jugoslav@mts-si.rs</a>&gt;
+		<div style="margin-top: 10px; font-size: 13px;">
+			Dozvoljena je besplatna upotreba i prepravka aplikacije u komercijalne svrhe.
+		</div>
+	</footer>
+	<script>
+		function toggleTheme() {
+			const body = document.body;
+			body.setAttribute("data-theme", body.getAttribute("data-theme") === "dark" ? "light" : "dark");
+		}
+		let files = [];
+		function addFile(file) {
+			if (!file || file.type !== "application/pdf") return;
+			if (files.some(f => f.name === file.name && f.size === file.size)) return;
+			files.push(file);
+			renderFileList();
+		}
+		function clearFiles() {
+			files = [];
+			renderFileList();
+			document.getElementById("downloadLink").style.display = "none";
+			document.getElementById("mergePreview").innerHTML = "";
+		}
+		function renderFileList() {
+			const list = document.getElementById("fileList");
+			list.innerHTML = "";
+			files.forEach((file, index) => {
+				const li = document.createElement("li");
+				li.innerHTML = `${file.name} <button class="remove-btn" onclick="removeFile(${index})">🗑️</button>`;
+				list.appendChild(li);
+			});
+		}
+		function removeFile(index) {
+			files.splice(index, 1);
+			renderFileList();
+		}
+		document.getElementById('pdfInput').addEventListener('change', (event) => {
+			for (const file of event.target.files) addFile(file);
+			event.target.value = "";
+		});
+		async function mergePDFs() {
+			if (files.length < 2) return alert("Dodaj bar 2 PDF fajla.");
+			const { PDFDocument } = PDFLib;
+			const mergedPdf = await PDFDocument.create();
+			for (let file of files) {
+				const buffer = await file.arrayBuffer();
+				const pdf = await PDFDocument.load(buffer);
+				const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+				pages.forEach(p => mergedPdf.addPage(p));
+			}
+			const bytes = await mergedPdf.save();
+			const blob = new Blob([bytes], { type: "application/pdf" });
+			const link = document.getElementById("downloadLink");
+			link.href = URL.createObjectURL(blob);
+			link.download = "spojeni.pdf";
+			link.style.display = "inline";
+			link.scrollIntoView({ behavior: "smooth" });
+			renderPreview(bytes, "mergePreview");
+		}
+		let loadedSplitPdf = null;
+		document.getElementById('splitInput').addEventListener('change', async (e) => {
+			const buffer = await e.target.files[0].arrayBuffer();
+			loadedSplitPdf = await PDFLib.PDFDocument.load(buffer);
+		});
+		async function extractPages() {
+			const input = document.getElementById("pageNumbers").value;
+			if (!loadedSplitPdf) return alert("Prvo učitaj PDF dokument.");
+			const indices = input.split(',').map(x => parseInt(x.trim()) - 1).filter(x => x >= 0);
+			const newPdf = await PDFLib.PDFDocument.create();
+			const pages = await newPdf.copyPages(loadedSplitPdf, indices);
+			pages.forEach(p => newPdf.addPage(p));
+			const bytes = await newPdf.save();
+			const blob = new Blob([bytes], { type: "application/pdf" });
+			const link = document.getElementById("splitDownload");
+			link.href = URL.createObjectURL(blob);
+			link.download = "izdvojeno.pdf";
+			link.style.display = "inline";
+			link.scrollIntoView({ behavior: "smooth" });
+			renderPreview(bytes, "splitPreview");
+		}
+		let _rotatePdfOriginal = null;
+		document.getElementById("rotateInput").addEventListener("change", async (event) => {
+			const file = event.target.files[0];
+			const buffer = await file.arrayBuffer();
+			_rotatePdfOriginal = await PDFLib.PDFDocument.load(buffer);
+			renderPreview(buffer, "rotatePreview");
+		});
+		async function rotatePages() {
+			const pagesInput = document.getElementById("rotatePages").value;
+			const rotation = parseInt(document.getElementById("rotation").value);
+			const pagesToRotate = pagesInput.split(',').map(x => parseInt(x.trim()) - 1).filter(x => !isNaN(x));
+			const { PDFDocument, degrees } = PDFLib;
+			const doc = await PDFDocument.create();
+			const copied = await doc.copyPages(_rotatePdfOriginal, _rotatePdfOriginal.getPageIndices());
+			copied.forEach((page, idx) => {
+				if (pagesToRotate.length === 0 || pagesToRotate.includes(idx)) {
+					const angle = page.getRotation().angle;
+					page.setRotation(degrees((angle + rotation) % 360));
+				}
+				doc.addPage(page);
+			});
+			const bytes = await doc.save();
+			const blob = new Blob([bytes], { type: "application/pdf" });
+			const link = document.getElementById("rotateDownload");
+			link.href = URL.createObjectURL(blob);
+			link.download = "rotirani.pdf";
+			link.style.display = "inline";
+			link.scrollIntoView({ behavior: "smooth" });
+			renderPreview(bytes, "rotatePreview");
+		}
+		async function renderPreview(buffer, containerId) {
+			const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+			const container = document.getElementById(containerId);
+			container.innerHTML = "";
+			for (let i = 0; i < pdf.numPages; i++) {
+				const page = await pdf.getPage(i + 1);
+				const canvas = document.createElement("canvas");
+				const context = canvas.getContext("2d");
+				const viewport = page.getViewport({ scale: 0.3 });
+				canvas.width = viewport.width;
+				canvas.height = viewport.height;
+				await page.render({ canvasContext: context, viewport }).promise;
+				container.appendChild(canvas);
+			}
+		}
+	</script>
 </body>
 
 </html>
